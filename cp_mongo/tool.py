@@ -1,5 +1,5 @@
 import cherrypy
-import pymongo
+from pymongo import MongoClient
 
 __version__ = 0.1
 
@@ -17,21 +17,18 @@ class MongoTool(cherrypy.Tool):
         if not hasattr(cherrypy.request, "mongo") or \
            not getattr(cherrypy.request, "mongo"):
             args = {
-                'host': 'localhost',
-                'port': 27017,
-                'max_pool_size': 10,
-                'network_timeout': None,
-                'tz_aware': False,
-                'document_class': dict,
-                '_connect': False
+                "uri": "mongodb://localhost:27017",
+                "database": "ExampleDatabase"
             }
             args.update(kwargs)
-            connection = pymongo.Connection(**args)
-            setattr(cherrypy.request, "mongo", connection)
+            client = MongoClient(args['uri'])
+            setattr(cherrypy.request, "_mongo_client", client)
+            setattr(cherrypy.request, "mongo", client[args['database']])
         cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
     def on_end_resource(self, **kwargs):
         if hasattr(cherrypy.request, "mongo") and getattr(cherrypy.request, "mongo"):
-            c = getattr(cherrypy.request, "mongo").connection
+            c = getattr(cherrypy.request, "_mongo_client")
             c.close()
-            c.disconnect()
+            setattr(cherrypy.request, "_mongo_client", None)
+            setattr(cherrypy.request, "mongo", None)

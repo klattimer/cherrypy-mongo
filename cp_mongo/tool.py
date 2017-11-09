@@ -9,6 +9,14 @@ class MongoTool(cherrypy.Tool):
         cherrypy.Tool.__init__(self, 'on_start_resource',
                                self.on_start_resource,
                                priority=20)
+        if 'uri' in kw.keys():
+            self.uri = kw['uri']
+        else:
+            self.default_uri = "mongodb://localhost:27017"
+        if 'database' in kw.keys():
+            self.database = kw['database']
+        else:
+            self.database = "ExampleDatabase"
 
     def _setup(self):
         cherrypy.Tool._setup(self)
@@ -17,8 +25,8 @@ class MongoTool(cherrypy.Tool):
         if not hasattr(cherrypy.request, "mongo") or \
            not getattr(cherrypy.request, "mongo"):
             args = {
-                "uri": "mongodb://localhost:27017",
-                "database": "ExampleDatabase"
+                "uri": self.uri,
+                "database": self.database
             }
             args.update(kwargs)
             client = MongoClient(args['uri'])
